@@ -1,59 +1,45 @@
 @import 'tailwindcss';
 
-:root {
-  font-family: Inter, 'Segoe UI', sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  color: #0f172a;
-  background: #f1f5f9;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
 
-* {
-  box-sizing: border-box;
-}
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
 
-html {
-  background: #f1f5f9;
-}
+  body {
+    margin: 0;
+    min-width: 320px;
+    background: #f1f5f9;
+    color: #0f172a;
+    font-family: Inter, 'Segoe UI', sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 
-body {
-  margin: 0;
-  min-width: 320px;
-}
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
 
-html,
-body,
-#root {
-  height: 100%;
+  #root {
+    min-height: 100vh;
+  }
 }
 
 @media (min-width: 768px) {
   body {
     overflow: hidden;
   }
-}
-
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-
-#root {
-  min-height: 100vh;
-}
-
-.character-scroll {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.character-scroll::-webkit-scrollbar {
-  display: none;
 }
 

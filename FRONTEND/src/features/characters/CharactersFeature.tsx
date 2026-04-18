@@ -202,7 +202,7 @@ export function CharactersFeature({ onBackToList, onSelectCharacter, selectedCha
             sortOrder={sortOrder}
           />
 
-          <div className="character-scroll mt-4 overflow-y-auto md:min-h-0 md:flex-1 md:pb-0">
+          <div className="mt-4 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:min-h-0 md:flex-1 md:pb-0">
             {loading && !visibleCharacters.length ? (
               <CharacterListSkeleton />
             ) : (
