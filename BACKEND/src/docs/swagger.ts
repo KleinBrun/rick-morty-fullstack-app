@@ -7,7 +7,8 @@ export const graphqlSwaggerDocument = {
             'This backend is GraphQL-first. In Swagger you will see only /health and one main POST /graphql route, because all business operations travel through the same GraphQL endpoint. Open the examples selector inside /graphql to test listing, detail, favorites, comments, delete, and restore flows.',
     },
     servers: [
-        { url: 'http://localhost:4001', description: 'Docker local backend' },
+        { url: 'http://localhost:4001', description: 'Docker' },
+        { url: 'http://localhost:4000', description: 'local' },
     ],
     tags: [     
         { name: 'Characters', description: 'Character listing and detail operations' },
