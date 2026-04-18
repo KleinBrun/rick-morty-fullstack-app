@@ -85,8 +85,6 @@ describe('GetCharacterByIdUseCase', () => {
   });
 
   it('loads the character from the public API when it does not exist locally', async () => {
-    // Verificamos el flujo detallado por ID: cache, BD y luego API publica.
-    // Si el personaje no existe localmente, debe importarse y devolverse.
     const externalSource = {
       async search() {
         return [];

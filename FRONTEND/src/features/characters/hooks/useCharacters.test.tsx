@@ -115,7 +115,6 @@ function createWrapper(mocks: MockedResponse[], initialEntry = '/') {
 
 describe('useCharacters', () => {
   it('loads characters sorted ascending by default and descending when requested', async () => {
-    // Prueba el orden principal de la lista desde el hook.
     const { result } = renderHook(() => useCharacters(), {
       wrapper: createWrapper(charactersMock),
     });
