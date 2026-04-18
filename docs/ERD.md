@@ -25,7 +25,7 @@ This is the relational model used by the application persistence layer.
 
 ---
 
-## ERD V2
+## ERD
 
 ```mermaid
 erDiagram
@@ -59,8 +59,14 @@ erDiagram
         DATE updatedAt "required"
     }
 
+
     CHARACTERS ||--o{ COMMENTS : "1 to many"
     CHARACTERS ||--o| FAVORITES : "1 to 0..1"
+
+    SEQUELIZE_MIGRATIONS {
+        STRING name PK "migration identifier (filename)"
+        TIMESTAMPTZ runAt "applied at timestamp"
+    }
 ```
 
 ---
@@ -105,9 +111,31 @@ erDiagram
 
 ---
 
+
 ## Relationship and integrity rules
 
 - comments.characterId has cascade update and cascade delete
 - favorites.characterId has cascade update and cascade delete
 - favorites.characterId is unique, so a character cannot be favorited more than once in the table
 - deletedAt allows logical deletion without physically removing the row immediately
+
+---
+
+### sequelize_migrations
+
+| Column | Type | Key / Rule | Detail |
+|---|---|---|---|
+| name | VARCHAR(255) | PK, NOT NULL | Migration identifier (filename) |
+| runAt | TIMESTAMPTZ | NOT NULL | Timestamp when migration was applied |
+
+-- public.sequelize_migrations definition
+
+-- Drop table
+
+-- DROP TABLE public.sequelize_migrations;
+
+CREATE TABLE public.sequelize_migrations (
+    "name" varchar(255) NOT NULL,
+    "runAt" timestamptz NOT NULL,
+    CONSTRAINT sequelize_migrations_pkey PRIMARY KEY (name)
+);
