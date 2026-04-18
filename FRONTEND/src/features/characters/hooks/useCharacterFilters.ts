@@ -41,7 +41,6 @@ export function useCharacterFilters(props: Omit<CharacterFiltersProps, 'activeFi
         onFilterChange,
         onListModeChange,
         onSortOrderChange,
-        onClearFilters,
         activeFilterCount,
     } = props;
 

@@ -132,7 +132,6 @@ describe('SoftDeleteCharacterUseCase', () => {
   });
 
   it('soft deletes, restores, and invalidates the related cache', async () => {
-    // Verifica el ciclo completo de eliminar/restaurar sin dejar cache vieja.
     const deleteUseCase = new SoftDeleteCharacterUseCase(repository, cache);
     const restoreUseCase = new RestoreCharacterUseCase(repository, cache);
 

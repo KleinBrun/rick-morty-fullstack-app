@@ -162,7 +162,6 @@ describe('SearchCharactersUseCase', () => {
   });
 
   it('filters characters by multiple criteria at the same time', async () => {
-    // Verifica la combinacion real de filtros que usa la interfaz.
     const results = await useCase.execute({
       name: 'rick',
       status: 'alive',
@@ -176,7 +175,6 @@ describe('SearchCharactersUseCase', () => {
   });
 
   it('merges public API matches when the local filter only returns a partial result set', async () => {
-    // Cubre la regresion clave: enriquecer resultados incompletos con la API publica.
     const externalSource = {
       async search() {
         return [
