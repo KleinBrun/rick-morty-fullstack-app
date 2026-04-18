@@ -1,0 +1,1 @@
+export { CharactersFeature } from './CharactersFeature';
