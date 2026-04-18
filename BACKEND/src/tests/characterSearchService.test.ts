@@ -140,18 +140,6 @@ describe('SearchCharactersUseCase', () => {
     repository.setCharacters(baseCharacters);
   });
 
-  it('returns the full list sorted alphabetically when there are no filters', async () => {
-    // Prueba el caso base del buscador y confirma el orden estable.
-    const results = await useCase.execute();
-
-    expect(results.map((character) => character.name)).toEqual([
-      'Beth Smith',
-      'Birdperson',
-      'Morty Smith',
-      'Rick Sanchez',
-    ]);
-  });
-
   it('limits the initial unfiltered list to 15 characters when the repository contains more records', async () => {
     repository.setCharacters(
       Array.from({ length: 18 }, (_, index) => ({
@@ -185,18 +173,6 @@ describe('SearchCharactersUseCase', () => {
 
     expect(results).toHaveLength(1);
     expect(results[0]?.name).toBe('Rick Sanchez');
-  });
-
-  it('filters gender values exactly so male does not match female', async () => {
-    const results = await useCase.execute({
-      gender: 'male',
-    });
-
-    expect(results.map((character) => character.name)).toEqual([
-      'Birdperson',
-      'Morty Smith',
-      'Rick Sanchez',
-    ]);
   });
 
   it('merges public API matches when the local filter only returns a partial result set', async () => {

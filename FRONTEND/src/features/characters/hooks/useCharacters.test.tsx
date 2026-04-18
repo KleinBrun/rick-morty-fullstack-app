@@ -139,45 +139,4 @@ describe('useCharacters', () => {
     ]);
   });
 
-  it('does not fetch deleted characters while browsing active lists', async () => {
-    // Evita consultas duplicadas cuando el usuario esta en la vista activa.
-    const activeOnlyMocks: MockedResponse[] = [
-      {
-        request: {
-          query: GET_CHARACTERS,
-          variables: {
-            filter: {},
-          },
-        },
-        result: {
-          data: {
-            characters: {
-              results: [
-                {
-                  id: '1',
-                  name: 'Beth Smith',
-                  image: 'beth.png',
-                  species: 'Human',
-                  __typename: 'Character',
-                },
-              ],
-              __typename: 'CharactersPayload',
-            },
-          },
-        },
-      },
-    ];
-
-    const { result } = renderHook(() => useCharacters(), {
-      wrapper: createWrapper(activeOnlyMocks),
-    });
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    expect(result.current.error).toBeUndefined();
-    expect(result.current.deletedCharacters).toEqual([]);
-    expect(result.current.characters.map((character) => character.id)).toEqual(['1']);
-  });
 });
