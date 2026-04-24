@@ -32,6 +32,7 @@ export function CharactersFeature({ onBackToList, onSelectCharacter, selectedCha
 
   const {
     addComment,
+    favoriteCharacters,
     commentsByCharacter,
     favoriteIds,
     hiddenCharacterIds,
@@ -54,14 +55,15 @@ export function CharactersFeature({ onBackToList, onSelectCharacter, selectedCha
 
   const visibleCharacters = useMemo(
     () =>
-      getVisibleCharacters({
+        getVisibleCharacters({
         characters,
         deletedCharacters,
+        favoriteCharacters,
         favoriteIds,
         hiddenCharacterIds,
         listMode,
       }),
-    [characters, deletedCharacters, favoriteIds, hiddenCharacterIds, listMode],
+    [characters, deletedCharacters, favoriteCharacters, favoriteIds, hiddenCharacterIds, listMode],
   );
 
   const activeFilterCount = useMemo(
@@ -104,8 +106,8 @@ export function CharactersFeature({ onBackToList, onSelectCharacter, selectedCha
   );
 
   const handleToggleFavorite = useCallback(
-    async (characterId: string) => {
-      await toggleFavorite(characterId);
+    async (characterId: string, character?: typeof selectedCharacter) => {
+      await toggleFavorite(characterId, character ?? undefined);
     },
     [toggleFavorite],
   );
@@ -161,7 +163,7 @@ export function CharactersFeature({ onBackToList, onSelectCharacter, selectedCha
       return;
     }
 
-    void handleToggleFavorite(selectedCharacter.id);
+    void handleToggleFavorite(selectedCharacter.id, selectedCharacter);
   }, [handleToggleFavorite, selectedCharacter]);
 
   const asideClassName = [

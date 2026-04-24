@@ -62,12 +62,14 @@ export function mergeDeletedCharacters(
 export function getVisibleCharacters({
   characters,
   deletedCharacters,
+  favoriteCharacters,
   favoriteIds,
   hiddenCharacterIds,
   listMode,
 }: {
   characters: Character[];
   deletedCharacters: Character[];
+  favoriteCharacters: Character[];
   favoriteIds: string[];
   hiddenCharacterIds: string[];
   listMode: CharacterViewMode;
@@ -79,16 +81,33 @@ export function getVisibleCharacters({
   const hiddenLookup = new Set(hiddenCharacterIds);
   const favoriteLookup = new Set(favoriteIds);
   const activeCharacters = characters.filter((character) => !hiddenLookup.has(character.id));
+  const visibleCharactersById = new Map<string, Character>();
+
+  for (const character of activeCharacters) {
+    visibleCharactersById.set(character.id, character);
+  }
 
   if (listMode === 'starred') {
-    return activeCharacters.filter((character) => favoriteLookup.has(character.id));
+    for (const character of favoriteCharacters) {
+      if (favoriteLookup.has(character.id) && !hiddenLookup.has(character.id)) {
+        visibleCharactersById.set(character.id, character);
+      }
+    }
+
+    return [...visibleCharactersById.values()].filter((character) => favoriteLookup.has(character.id));
   }
 
   if (listMode === 'others') {
     return activeCharacters.filter((character) => !favoriteLookup.has(character.id));
   }
 
-  return activeCharacters;
+  for (const character of favoriteCharacters) {
+    if (favoriteLookup.has(character.id) && !hiddenLookup.has(character.id)) {
+      visibleCharactersById.set(character.id, character);
+    }
+  }
+
+  return [...visibleCharactersById.values()];
 }
 
 export function getActiveFilterCount(

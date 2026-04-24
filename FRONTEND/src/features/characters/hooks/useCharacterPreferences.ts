@@ -32,6 +32,7 @@ function clearLegacyPreferenceStorage() {
 export function useCharacterPreferences(selectedCharacterId?: string) {
   const [hiddenCharacterIds, setHiddenCharacterIds] = useState<string[]>([]);
   const [hiddenCharactersById, setHiddenCharactersById] = useState<Record<string, Character>>({});
+  const [favoriteCharactersById, setFavoriteCharactersById] = useState<Record<string, Character>>({});
 
   const { data: favoritesData, client } = useQuery<FavoriteCharacterIdsQueryResponse>(GET_FAVORITE_CHARACTER_IDS);
 
@@ -52,6 +53,7 @@ export function useCharacterPreferences(selectedCharacterId?: string) {
   const favoriteLookup = useMemo(() => new Set(favoriteIds), [favoriteIds]);
   const hiddenLookup = useMemo(() => new Set(hiddenCharacterIds), [hiddenCharacterIds]);
   const hiddenCharacters = useMemo(() => Object.values(hiddenCharactersById), [hiddenCharactersById]);
+  const favoriteCharacters = useMemo(() => Object.values(favoriteCharactersById), [favoriteCharactersById]);
 
   const commentsByCharacter = useMemo<Record<string, CharacterComment[]>>(() => {
     if (!selectedCharacterId) {
@@ -63,7 +65,7 @@ export function useCharacterPreferences(selectedCharacterId?: string) {
     };
   }, [commentsData?.comments, selectedCharacterId]);
 
-  const toggleFavorite = useCallback(async (characterId: string) => {
+  const toggleFavorite = useCallback(async (characterId: string, character?: Character) => {
     const { data } = await toggleFavoriteMutation({ variables: { characterId } });
     const isNowFavorite = data?.toggleFavorite;
 
@@ -85,6 +87,22 @@ export function useCharacterPreferences(selectedCharacterId?: string) {
       data: {
         favoriteCharacterIds: nextIds,
       },
+    });
+
+    setFavoriteCharactersById((currentCharacters) => {
+      if (!isNowFavorite) {
+        const { [characterId]: _removed, ...remainingCharacters } = currentCharacters;
+        return remainingCharacters;
+      }
+
+      if (!character) {
+        return currentCharacters;
+      }
+
+      return {
+        ...currentCharacters,
+        [characterId]: character,
+      };
     });
   }, [client, toggleFavoriteMutation]);
 
@@ -148,6 +166,7 @@ export function useCharacterPreferences(selectedCharacterId?: string) {
     addComment,
     commentsByCharacter,
     favoriteIds,
+    favoriteCharacters,
     hiddenCharacterIds,
     hiddenCharacters,
     isFavorite: useCallback((characterId: string) => favoriteLookup.has(characterId), [favoriteLookup]),

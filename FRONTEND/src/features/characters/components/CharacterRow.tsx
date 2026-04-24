@@ -82,7 +82,7 @@ function CharacterRowComponent({
         {showRestoreAction ? (
           <RestoreButton onClick={() => onRestoreCharacter?.(character.id)} name={character.name} />
         ) : null}
-        {showFavoriteActions ? <HeartButton isFavorite={isFavorite} onClick={() => onToggleFavorite(character.id)} /> : null}
+        {showFavoriteActions ? <HeartButton isFavorite={isFavorite} onClick={() => onToggleFavorite(character.id, character)} /> : null}
       </div>
     </div>
   );

@@ -489,6 +489,285 @@ describe('CharactersFeature integrations', () => {
         });
     });
 
+    it('keeps favorited imported species visible in starred mode even when the default list stays limited', async () => {
+        const limitedDefaultListMocks: MockedResponse[] = [
+            {
+                request: {
+                    query: GET_CHARACTERS,
+                    variables: { filter: {}, },
+                },
+                result: {
+                    data: {
+                        characters: {
+                            results: apiCharacters.map((character) => ({
+                                id: character.id,
+                                name: character.name,
+                                image: character.image,
+                                species: character.species,
+                                __typename: 'Character',
+                            })),
+                            __typename: 'CharactersPayload',
+                        },
+                    },
+                },
+            },
+            {
+                request: {
+                    query: GET_FAVORITE_CHARACTER_IDS,
+                },
+                result: {
+                    data: {
+                        favoriteCharacterIds: [],
+                    },
+                },
+            },
+            {
+                request: {
+                    query: GET_CHARACTER_PANEL_DATA,
+                    variables: { id: '1' },
+                },
+                result: {
+                    data: {
+                        character: apiCharacters[0],
+                        comments: [],
+                    },
+                },
+            },
+            {
+                request: {
+                    query: GET_CHARACTER_PANEL_DATA,
+                    variables: { id: '80' },
+                },
+                result: {
+                    data: {
+                        character: importedCharacter,
+                        comments: [],
+                    },
+                },
+            },
+            {
+                request: {
+                    query: GET_CHARACTERS,
+                    variables: { filter: { name: '80' }, },
+                },
+                result: {
+                    data: {
+                        characters: {
+                            results: [{
+                                id: importedCharacter.id,
+                                name: importedCharacter.name,
+                                image: importedCharacter.image,
+                                species: importedCharacter.species,
+                                __typename: 'Character',
+                            }],
+                            __typename: 'CharactersPayload',
+                        },
+                    },
+                },
+            },
+            {
+                request: {
+                    query: TOGGLE_FAVORITE,
+                    variables: { characterId: '80' },
+                },
+                result: {
+                    data: {
+                        toggleFavorite: true,
+                    },
+                },
+            },
+            {
+                request: {
+                    query: GET_CHARACTERS,
+                    variables: { filter: {}, },
+                },
+                result: {
+                    data: {
+                        characters: {
+                            results: apiCharacters.map((character) => ({
+                                id: character.id,
+                                name: character.name,
+                                image: character.image,
+                                species: character.species,
+                                __typename: 'Character',
+                            })),
+                            __typename: 'CharactersPayload',
+                        },
+                    },
+                },
+            },
+        ];
+
+        render(
+            <MockedProvider mocks={limitedDefaultListMocks}>
+                <MemoryRouter>
+                    <CharactersFeature onSelectCharacter={vi.fn()} />
+                </MemoryRouter>
+            </MockedProvider>,
+        );
+
+        await screen.findByText('Rick Sanchez');
+
+        fireEvent.change(screen.getByPlaceholderText('Search or filter results'), {
+            target: { value: '80' },
+        });
+
+        await waitFor(() => {
+            expect(screen.getAllByText("80's Snake").length).toBeGreaterThan(0);
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Add favorite' }));
+        fireEvent.change(screen.getByPlaceholderText('Search or filter results'), {
+            target: { value: '' },
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Toggle filters' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Starred' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Filter' }));
+
+        await waitFor(() => {
+            expect(screen.getByText('Starred characters (1)')).toBeInTheDocument();
+            expect(screen.getAllByText("80's Snake").length).toBeGreaterThan(0);
+        });
+    });
+
+    it('keeps favorited imported species visible in all mode even when the default list stays limited', async () => {
+        const limitedDefaultListMocks: MockedResponse[] = [
+            {
+                request: {
+                    query: GET_CHARACTERS,
+                    variables: { filter: {}, },
+                },
+                result: {
+                    data: {
+                        characters: {
+                            results: apiCharacters.map((character) => ({
+                                id: character.id,
+                                name: character.name,
+                                image: character.image,
+                                species: character.species,
+                                __typename: 'Character',
+                            })),
+                            __typename: 'CharactersPayload',
+                        },
+                    },
+                },
+            },
+            {
+                request: {
+                    query: GET_FAVORITE_CHARACTER_IDS,
+                },
+                result: {
+                    data: {
+                        favoriteCharacterIds: [],
+                    },
+                },
+            },
+            {
+                request: {
+                    query: GET_CHARACTER_PANEL_DATA,
+                    variables: { id: '1' },
+                },
+                result: {
+                    data: {
+                        character: apiCharacters[0],
+                        comments: [],
+                    },
+                },
+            },
+            {
+                request: {
+                    query: GET_CHARACTER_PANEL_DATA,
+                    variables: { id: '80' },
+                },
+                result: {
+                    data: {
+                        character: importedCharacter,
+                        comments: [],
+                    },
+                },
+            },
+            {
+                request: {
+                    query: GET_CHARACTERS,
+                    variables: { filter: { name: '80' }, },
+                },
+                result: {
+                    data: {
+                        characters: {
+                            results: [{
+                                id: importedCharacter.id,
+                                name: importedCharacter.name,
+                                image: importedCharacter.image,
+                                species: importedCharacter.species,
+                                __typename: 'Character',
+                            }],
+                            __typename: 'CharactersPayload',
+                        },
+                    },
+                },
+            },
+            {
+                request: {
+                    query: TOGGLE_FAVORITE,
+                    variables: { characterId: '80' },
+                },
+                result: {
+                    data: {
+                        toggleFavorite: true,
+                    },
+                },
+            },
+            {
+                request: {
+                    query: GET_CHARACTERS,
+                    variables: { filter: {}, },
+                },
+                result: {
+                    data: {
+                        characters: {
+                            results: apiCharacters.map((character) => ({
+                                id: character.id,
+                                name: character.name,
+                                image: character.image,
+                                species: character.species,
+                                __typename: 'Character',
+                            })),
+                            __typename: 'CharactersPayload',
+                        },
+                    },
+                },
+            },
+        ];
+
+        render(
+            <MockedProvider mocks={limitedDefaultListMocks}>
+                <MemoryRouter>
+                    <CharactersFeature onSelectCharacter={vi.fn()} />
+                </MemoryRouter>
+            </MockedProvider>,
+        );
+
+        await screen.findByText('Rick Sanchez');
+
+        fireEvent.change(screen.getByPlaceholderText('Search or filter results'), {
+            target: { value: '80' },
+        });
+
+        await waitFor(() => {
+            expect(screen.getAllByText("80's Snake").length).toBeGreaterThan(0);
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Add favorite' }));
+        fireEvent.change(screen.getByPlaceholderText('Search or filter results'), {
+            target: { value: '' },
+        });
+
+        await waitFor(() => {
+            expect(screen.getAllByText("80's Snake").length).toBeGreaterThan(0);
+        });
+    });
+
     it('keeps deleted species filters stable after deleting different character types', async () => {
         const deletedFilterMocks: MockedResponse[] = [
             {
