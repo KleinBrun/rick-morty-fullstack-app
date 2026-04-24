@@ -92,7 +92,6 @@ export function useCharacterPreferences(selectedCharacterId?: string) {
     client.writeQuery<FavoriteCharacterIdsQueryResponse>({
       query: GET_FAVORITE_CHARACTER_IDS,
       data: {
-        __typename: 'Query',
         favoriteCharacterIds: nextIds,
       },
     });
