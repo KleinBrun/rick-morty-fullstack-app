@@ -37,7 +37,7 @@ export type CharacterRowProps = {
     isFavorite: boolean;
     isSelected: boolean;
     onSelect: (characterId: string) => void;
-    onToggleFavorite: (characterId: string) => void;
+    onToggleFavorite: (characterId: string, character: Character) => void;
     onRestoreCharacter?: (characterId: string) => void;
     showFavoriteActions?: boolean;
     showRestoreAction?: boolean;
@@ -49,7 +49,7 @@ export type CharacterListProps = {
     listMode: CharacterViewMode;
     onRestoreCharacter?: (characterId: string) => void;
     onSelectCharacter: (characterId: string) => void;
-    onToggleFavorite: (characterId: string) => void;
+    onToggleFavorite: (characterId: string, character: Character) => void;
     selectedCharacterId?: string;
     showFavoriteActions?: boolean;
     showRestoreActions?: boolean;

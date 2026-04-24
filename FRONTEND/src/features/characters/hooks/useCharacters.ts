@@ -70,11 +70,14 @@ export function useCharacters() {
     if (nextParams.toString() !== searchParams.toString()) { setSearchParams(nextParams, { replace: true }); }
   }, [filters, listMode, searchParams, setSearchParams, sortOrder]);
   const queryFilters = useMemo(
-    () =>
-      sanitizeFilters({
+    () => {
+      const normalizedFilters = {
         ...filters,
         name: debouncedName,
-      }),
+        species: filters.species ? filters.species.trim().toLowerCase() : '',
+      };
+      return sanitizeFilters(normalizedFilters);
+    },
     [debouncedName, filters],
   );
 
