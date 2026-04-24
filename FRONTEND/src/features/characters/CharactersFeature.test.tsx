@@ -536,6 +536,18 @@ describe('CharactersFeature integrations', () => {
             {
                 request: {
                     query: GET_CHARACTER_PANEL_DATA,
+                    variables: { id: '2' },
+                },
+                result: {
+                    data: {
+                        character: apiCharacters[1],
+                        comments: [],
+                    },
+                },
+            },
+            {
+                request: {
+                    query: GET_CHARACTER_PANEL_DATA,
                     variables: { id: '80' },
                 },
                 result: {
@@ -671,6 +683,18 @@ describe('CharactersFeature integrations', () => {
                 result: {
                     data: {
                         character: apiCharacters[0],
+                        comments: [],
+                    },
+                },
+            },
+            {
+                request: {
+                    query: GET_CHARACTER_PANEL_DATA,
+                    variables: { id: '2' },
+                },
+                result: {
+                    data: {
+                        character: apiCharacters[1],
                         comments: [],
                     },
                 },

@@ -30,6 +30,7 @@ function clearLegacyPreferenceStorage() {
 }
 
 export function useCharacterPreferences(selectedCharacterId?: string) {
+  const [favoriteIdsState, setFavoriteIdsState] = useState<string[]>([]);
   const [hiddenCharacterIds, setHiddenCharacterIds] = useState<string[]>([]);
   const [hiddenCharactersById, setHiddenCharactersById] = useState<Record<string, Character>>({});
   const [favoriteCharactersById, setFavoriteCharactersById] = useState<Record<string, Character>>({});
@@ -49,7 +50,11 @@ export function useCharacterPreferences(selectedCharacterId?: string) {
     clearLegacyPreferenceStorage();
   }, []);
 
-  const favoriteIds = favoritesData?.favoriteCharacterIds ?? [];
+  useEffect(() => {
+    setFavoriteIdsState(favoritesData?.favoriteCharacterIds ?? []);
+  }, [favoritesData?.favoriteCharacterIds]);
+
+  const favoriteIds = favoriteIdsState;
   const favoriteLookup = useMemo(() => new Set(favoriteIds), [favoriteIds]);
   const hiddenLookup = useMemo(() => new Set(hiddenCharacterIds), [hiddenCharacterIds]);
   const hiddenCharacters = useMemo(() => Object.values(hiddenCharactersById), [hiddenCharactersById]);
@@ -82,9 +87,12 @@ export function useCharacterPreferences(selectedCharacterId?: string) {
       ? [...new Set([...currentIds, characterId])]
       : currentIds.filter((id) => id !== characterId);
 
+    setFavoriteIdsState(nextIds);
+
     client.writeQuery<FavoriteCharacterIdsQueryResponse>({
       query: GET_FAVORITE_CHARACTER_IDS,
       data: {
+        __typename: 'Query',
         favoriteCharacterIds: nextIds,
       },
     });
