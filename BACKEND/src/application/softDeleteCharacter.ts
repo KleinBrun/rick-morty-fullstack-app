@@ -1,6 +1,6 @@
-import type { CacheStorePort } from '../ports/cacheStore.js';
-import type { CharacterRepositoryPort } from '../ports/characterRepository.js';
-import type { FavoriteRepositoryPort } from '../ports/favoriteRepository.js';
+import type { CacheStorePort } from '../domain/ports/cacheStore.js';
+import type { CharacterRepositoryPort } from '../domain/ports/characterRepository.js';
+import type { FavoriteRepositoryPort } from '../domain/ports/favoriteRepository.js';
 
 export class SoftDeleteCharacterUseCase {
   constructor(

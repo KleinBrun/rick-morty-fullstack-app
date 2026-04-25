@@ -1,7 +1,7 @@
-import type { ExternalCharacterSourcePort } from '../application/ports/externalCharacterSource.js';
-import type { CharacterRepositoryPort } from '../application/ports/characterRepository.js';
-import { AppError, toExternalApiError } from '../application/errors.js';
-import type { CharacterSearchFilters, CharacterSeed } from '../domain/character.js';
+import type { ExternalCharacterSourcePort } from '../../domain/ports/externalCharacterSource.js';
+import type { CharacterRepositoryPort } from '../../domain/ports/characterRepository.js';
+import { AppError, toExternalApiError } from '../../application/errors.js';
+import type { CharacterSearchFilters, CharacterSeed } from '../../domain/character.js';
 
 const API_URL = 'https://rickandmortyapi.com/api/character';
 

@@ -1,7 +1,7 @@
 import { createClient, type RedisClientType } from 'redis';
-import { toErrorMessage } from '../application/errors.js';
-import type { CacheStorePort } from '../application/ports/cacheStore.js';
-import { env } from '../config/env.js';
+import { toErrorMessage } from '../../application/errors.js';
+import type { CacheStorePort } from '../../domain/ports/cacheStore.js';
+import { env } from '../../config/env.js';
 
 export type CacheClientLike = CacheStorePort;
 

@@ -39,17 +39,6 @@ export function toErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
 
-export function toDatabaseError(operation: string, error: unknown) {
-  if (isAppError(error)) {
-    return error;
-  }
-
-  return new AppError('DATABASE_UNAVAILABLE', `Database operation failed: ${operation}`, {
-    cause: error,
-    details: { operation },
-  });
-}
-
 export function toExternalApiError(operation: string, error: unknown) {
   if (isAppError(error)) {
     return error;
@@ -59,4 +48,12 @@ export function toExternalApiError(operation: string, error: unknown) {
     cause: error,
     details: { operation },
   });
+}
+
+export function isDatabaseError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return error.name.startsWith('Sequelize') || error.name.includes('Database');
 }

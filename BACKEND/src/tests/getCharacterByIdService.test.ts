@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { AppError } from '../application/errors.js';
-import { GetCharacterByIdUseCase } from '../application/use-cases/getCharacterById.js';
-import type { CharacterRepositoryPort } from '../application/ports/characterRepository.js';
+import { GetCharacterByIdUseCase } from '../application/getCharacterById.js';
+import type { CharacterRepositoryPort } from '../domain/ports/characterRepository.js';
 import type { CharacterRecord, CharacterSeed } from '../domain/character.js';
 
 const baseCharacters: CharacterRecord[] = [

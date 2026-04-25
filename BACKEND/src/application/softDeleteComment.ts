@@ -1,5 +1,5 @@
-import type { CacheStorePort } from '../ports/cacheStore.js';
-import type { CommentRepositoryPort } from '../ports/commentRepository.js';
+import type { CacheStorePort } from '../domain/ports/cacheStore.js';
+import type { CommentRepositoryPort } from '../domain/ports/commentRepository.js';
 
 export class SoftDeleteCommentUseCase {
   constructor(

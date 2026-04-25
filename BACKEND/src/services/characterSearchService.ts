@@ -1,1 +1,0 @@
-export { SearchCharactersUseCase as CharacterSearchService } from '../application/use-cases/searchCharacters.js';

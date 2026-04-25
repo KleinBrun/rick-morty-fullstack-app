@@ -1,9 +1,9 @@
-import { logExecutionTime } from '../../decorators/logExecutionTime.js';
-import { isAppError, toErrorMessage, type ServiceWarning } from '../errors.js';
-import type { CharacterRecord, CharacterSearchFilters } from '../../domain/character.js';
-import type { CacheStorePort } from '../ports/cacheStore.js';
-import type { CharacterRepositoryPort } from '../ports/characterRepository.js';
-import type { ExternalCharacterSourcePort } from '../ports/externalCharacterSource.js';
+import { logExecutionTime } from '../infrastructure/services/logExecutionTime.js';
+import { isAppError, toErrorMessage, type ServiceWarning } from './errors.js';
+import type { CharacterRecord, CharacterSearchFilters } from '../domain/character.js';
+import type { CacheStorePort } from '../domain/ports/cacheStore.js';
+import type { CharacterRepositoryPort } from '../domain/ports/characterRepository.js';
+import type { ExternalCharacterSourcePort } from '../domain/ports/externalCharacterSource.js';
 
 function normalizeFilterEntries(filters: CharacterSearchFilters) {
   return Object.entries(filters)

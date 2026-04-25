@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { AppError } from '../application/errors.js';
-import { SearchCharactersUseCase } from '../application/use-cases/searchCharacters.js';
-import type { CharacterRepositoryPort } from '../application/ports/characterRepository.js';
+import { SearchCharactersUseCase } from '../application/searchCharacters.js';
+import type { CharacterRepositoryPort } from '../domain/ports/characterRepository.js';
 import type { CharacterRecord, CharacterSearchFilters, CharacterSeed } from '../domain/character.js';
 
 const baseCharacters: CharacterRecord[] = [
