@@ -1,8 +1,8 @@
 import { buildSchema, GraphQLError } from 'graphql';
-import { isAppError, toErrorMessage } from '../application/errors.js';
-import type { CharacterSearchResult } from '../application/use-cases/searchCharacters.js';
-import type { CharacterSearchFilters, CharacterRecord } from '../domain/character.js';
-import type { CharacterCommentRecord } from '../domain/comment.js';
+import { isAppError, isDatabaseError, toErrorMessage } from '../../application/errors.js';
+import type { CharacterSearchResult } from '../../application/searchCharacters.js';
+import type { CharacterSearchFilters, CharacterRecord } from '../../domain/character.js';
+import type { CharacterCommentRecord } from '../../domain/comment.js';
 
 type SearchCharactersEntry = {
   execute: (filters?: CharacterSearchFilters) => Promise<CharacterSearchResult>;
@@ -125,12 +125,30 @@ export function createRoot(
       });
     }
 
+    if (isDatabaseError(error)) {
+      const message = 'Database unavailable';
+      console.error(`[graphql] code=DATABASE_UNAVAILABLE message=${toErrorMessage(error)}`);
+      throw new GraphQLError(message, {
+        extensions: {
+          code: 'DATABASE_UNAVAILABLE',
+        },
+      });
+    }
+
     console.error(`[graphql] code=INTERNAL_SERVER_ERROR message=${toErrorMessage(error)}`);
     throw new GraphQLError('Internal server error', {
       extensions: {
         code: 'INTERNAL_SERVER_ERROR',
       },
     });
+  };
+
+  const resolveOrThrow = async <T>(resolver: () => Promise<T>) => {
+    try {
+      return await resolver();
+    } catch (error) {
+      throwGraphqlError(error);
+    }
   };
 
   const mapCharacter = (character: CharacterRecord) => ({
@@ -152,87 +170,57 @@ export function createRoot(
   return {
     health: () => 'ok',
     characters: async ({ filter }: { filter?: CharacterSearchFilters }) => {
-      try {
+      return resolveOrThrow(async () => {
         const result = await searchCharacters.execute(filter ?? {});
 
         return {
           results: result.results.map(mapCharacter),
           warnings: result.warnings,
         };
-      } catch (error) {
-        throwGraphqlError(error);
-      }
+      });
     },
     deletedCharacters: async ({ filter }: { filter?: CharacterSearchFilters }) => {
-      try {
+      return resolveOrThrow(async () => {
         const result = await searchDeletedCharacters.execute(filter ?? {});
 
         return {
           results: result.results.map(mapCharacter),
           warnings: result.warnings,
         };
-      } catch (error) {
-        throwGraphqlError(error);
-      }
+      });
     },
     character: async ({ id }: { id: string }) => {
-      try {
+      return resolveOrThrow(async () => {
         const result = await getCharacterById.execute(id);
         return result ? mapCharacter(result) : null;
-      } catch (error) {
-        throwGraphqlError(error);
-      }
+      });
     },
     favoriteCharacterIds: async () => {
-      try {
-        return await getFavoriteCharacterIds.execute();
-      } catch (error) {
-        throwGraphqlError(error);
-      }
+      return resolveOrThrow(() => getFavoriteCharacterIds.execute());
     },
     comments: async ({ characterId }: { characterId: string }) => {
-      try {
+      return resolveOrThrow(async () => {
         const results = await getCharacterComments.execute(characterId);
         return results.map(mapComment);
-      } catch (error) {
-        throwGraphqlError(error);
-      }
+      });
     },
     softDeleteCharacter: async ({ id }: { id: string }) => {
-      try {
-        return await softDeleteCharacter.execute(id);
-      } catch (error) {
-        throwGraphqlError(error);
-      }
+      return resolveOrThrow(() => softDeleteCharacter.execute(id));
     },
     restoreCharacter: async ({ id }: { id: string }) => {
-      try {
-        return await restoreCharacter.execute(id);
-      } catch (error) {
-        throwGraphqlError(error);
-      }
+      return resolveOrThrow(() => restoreCharacter.execute(id));
     },
     toggleFavorite: async ({ characterId }: { characterId: string }) => {
-      try {
-        return await toggleFavorite.execute(characterId);
-      } catch (error) {
-        throwGraphqlError(error);
-      }
+      return resolveOrThrow(() => toggleFavorite.execute(characterId));
     },
     addComment: async ({ characterId, content }: { characterId: string; content: string }) => {
-      try {
+      return resolveOrThrow(async () => {
         const result = await addComment.execute(characterId, content);
         return result ? mapComment(result) : null;
-      } catch (error) {
-        throwGraphqlError(error);
-      }
+      });
     },
     softDeleteComment: async ({ id }: { id: string }) => {
-      try {
-        return await softDeleteComment.execute(id);
-      } catch (error) {
-        throwGraphqlError(error);
-      }
+      return resolveOrThrow(() => softDeleteComment.execute(id));
     },
   };
 }

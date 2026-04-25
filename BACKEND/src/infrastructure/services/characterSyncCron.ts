@@ -1,6 +1,6 @@
 import cron from 'node-cron';
-import type { CharacterRepositoryPort } from '../application/ports/characterRepository.js';
-import { syncCharactersFromApi, syncCharactersOnFirstStart } from '../services/characterBootstrapService.js';
+import type { CharacterRepositoryPort } from '../../domain/ports/characterRepository.js';
+import { syncCharactersFromApi, syncCharactersOnFirstStart } from './characterBootstrapService.js';
 
 let hasStarted = false;
 

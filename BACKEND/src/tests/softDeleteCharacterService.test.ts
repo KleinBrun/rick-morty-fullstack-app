@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { RestoreCharacterUseCase } from '../application/use-cases/restoreCharacter.js';
-import { SoftDeleteCharacterUseCase } from '../application/use-cases/softDeleteCharacter.js';
-import type { CharacterRepositoryPort } from '../application/ports/characterRepository.js';
+import { RestoreCharacterUseCase } from '../application/restoreCharacter.js';
+import { SoftDeleteCharacterUseCase } from '../application/softDeleteCharacter.js';
+import type { CharacterRepositoryPort } from '../domain/ports/characterRepository.js';
 import type { CharacterRecord, CharacterSearchFilters, CharacterSeed } from '../domain/character.js';
 
 const baseCharacters: CharacterRecord[] = [

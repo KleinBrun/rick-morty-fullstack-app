@@ -1,5 +1,5 @@
 import { createApp } from './app.js';
-import { env } from './config/env.js';
+import { env } from '../../config/env.js';
 
 async function bootstrap() {
   try {

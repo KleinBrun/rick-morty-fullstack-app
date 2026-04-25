@@ -1,5 +1,5 @@
 import { Sequelize } from 'sequelize';
-import { env } from '../config/env.js';
+import { env } from '../../config/env.js';
 
 export function createSequelizeInstance() {
   const dialectOptions = env.dbSsl

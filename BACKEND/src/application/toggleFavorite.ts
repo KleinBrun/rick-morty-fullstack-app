@@ -1,5 +1,5 @@
-import type { CacheStorePort } from '../ports/cacheStore.js';
-import type { FavoriteRepositoryPort } from '../ports/favoriteRepository.js';
+import type { CacheStorePort } from '../domain/ports/cacheStore.js';
+import type { FavoriteRepositoryPort } from '../domain/ports/favoriteRepository.js';
 
 export class ToggleFavoriteUseCase {
   constructor(

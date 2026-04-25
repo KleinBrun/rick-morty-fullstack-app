@@ -1,6 +1,6 @@
-import type { CacheStorePort } from '../ports/cacheStore.js';
-import type { CommentRepositoryPort } from '../ports/commentRepository.js';
-import type { CharacterCommentRecord } from '../../domain/comment.js';
+import type { CacheStorePort } from '../domain/ports/cacheStore.js';
+import type { CommentRepositoryPort } from '../domain/ports/commentRepository.js';
+import type { CharacterCommentRecord } from '../domain/comment.js';
 
 export class AddCommentUseCase {
   constructor(
