@@ -48,7 +48,7 @@ export function useCharacters() {
   useEffect(() => {
     const nextParams = new URLSearchParams();
 
-    const trimmedName = filters.name.trim();
+    const trimmedName = debouncedName.trim();
     const trimmedStatus = filters.status.trim();
     const trimmedSpecies = filters.species.trim();
     const trimmedGender = filters.gender.trim();
@@ -68,7 +68,7 @@ export function useCharacters() {
     if (sortOrder !== 'asc') { nextParams.set('sort', sortOrder); }
 
     if (nextParams.toString() !== searchParams.toString()) { setSearchParams(nextParams, { replace: true }); }
-  }, [filters, listMode, searchParams, setSearchParams, sortOrder]);
+  }, [debouncedName, filters.gender, filters.species, filters.status, listMode, searchParams, setSearchParams, sortOrder]);
   const queryFilters = useMemo(
     () => {
       const normalizedFilters = {
@@ -78,7 +78,7 @@ export function useCharacters() {
       };
       return sanitizeFilters(normalizedFilters);
     },
-    [debouncedName, filters],
+    [debouncedName, filters.gender, filters.species, filters.status],
   );
 
   const shouldShowDeleted = listMode === 'deleted';
@@ -115,14 +115,25 @@ export function useCharacters() {
   );
 
   const updateFilter = useCallback(<K extends keyof CharacterFilters>(key: K, value: CharacterFilters[K]) => {
-    setFilters((currentFilters) => ({
-      ...currentFilters,
-      [key]: value,
-    }));
+    setFilters((currentFilters) => (
+      currentFilters[key] === value
+        ? currentFilters
+        : {
+          ...currentFilters,
+          [key]: value,
+        }
+    ));
   }, []);
 
   const clearFilters = useCallback(() => {
-    setFilters(DEFAULT_FILTERS);
+    setFilters((currentFilters) => (
+      currentFilters.name === DEFAULT_FILTERS.name &&
+        currentFilters.status === DEFAULT_FILTERS.status &&
+        currentFilters.species === DEFAULT_FILTERS.species &&
+        currentFilters.gender === DEFAULT_FILTERS.gender
+        ? currentFilters
+        : DEFAULT_FILTERS
+    ));
   }, []);
 
   return {

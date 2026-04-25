@@ -9,6 +9,11 @@ export const GET_CHARACTERS = gql`
         image
         species
       }
+      warnings {
+        code
+        message
+        source
+      }
     }
   }
 `;
@@ -21,6 +26,11 @@ export const GET_DELETED_CHARACTERS = gql`
         name
         image
         species
+      }
+      warnings {
+        code
+        message
+        source
       }
     }
   }

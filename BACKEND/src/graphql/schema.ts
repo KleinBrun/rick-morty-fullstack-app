@@ -1,9 +1,11 @@
-import { buildSchema } from 'graphql';
+import { buildSchema, GraphQLError } from 'graphql';
+import { isAppError, toErrorMessage } from '../application/errors.js';
+import type { CharacterSearchResult } from '../application/use-cases/searchCharacters.js';
 import type { CharacterSearchFilters, CharacterRecord } from '../domain/character.js';
 import type { CharacterCommentRecord } from '../domain/comment.js';
 
 type SearchCharactersEntry = {
-  execute: (filters?: CharacterSearchFilters) => Promise<CharacterRecord[]>;
+  execute: (filters?: CharacterSearchFilters) => Promise<CharacterSearchResult>;
 };
 
 type GetCharacterByIdEntry = {
@@ -11,7 +13,7 @@ type GetCharacterByIdEntry = {
 };
 
 type SearchDeletedCharactersEntry = {
-  execute: (filters?: CharacterSearchFilters) => Promise<CharacterRecord[]>;
+  execute: (filters?: CharacterSearchFilters) => Promise<CharacterSearchResult>;
 };
 
 type SoftDeleteCharacterEntry = {
@@ -63,8 +65,15 @@ export const schema = buildSchema(`
     createdAt: String!
   }
 
+  type ServiceWarning {
+    code: String!
+    message: String!
+    source: String!
+  }
+
   type CharactersPayload {
     results: [Character!]!
+    warnings: [ServiceWarning!]!
   }
 
   input FilterCharacter {
@@ -105,6 +114,25 @@ export function createRoot(
   addComment: AddCommentEntry,
   softDeleteComment: SoftDeleteCommentEntry,
 ) {
+  const throwGraphqlError = (error: unknown) => {
+    if (isAppError(error)) {
+      console.error(`[graphql] code=${error.code} message=${error.message}`);
+      throw new GraphQLError(error.message, {
+        extensions: {
+          code: error.code,
+          details: error.details,
+        },
+      });
+    }
+
+    console.error(`[graphql] code=INTERNAL_SERVER_ERROR message=${toErrorMessage(error)}`);
+    throw new GraphQLError('Internal server error', {
+      extensions: {
+        code: 'INTERNAL_SERVER_ERROR',
+      },
+    });
+  };
+
   const mapCharacter = (character: CharacterRecord) => ({
     id: String(character.apiId),
     name: character.name,
@@ -124,45 +152,87 @@ export function createRoot(
   return {
     health: () => 'ok',
     characters: async ({ filter }: { filter?: CharacterSearchFilters }) => {
-      const results = await searchCharacters.execute(filter ?? {});
+      try {
+        const result = await searchCharacters.execute(filter ?? {});
 
-      return {
-        results: results.map(mapCharacter),
-      };
+        return {
+          results: result.results.map(mapCharacter),
+          warnings: result.warnings,
+        };
+      } catch (error) {
+        throwGraphqlError(error);
+      }
     },
     deletedCharacters: async ({ filter }: { filter?: CharacterSearchFilters }) => {
-      const results = await searchDeletedCharacters.execute(filter ?? {});
+      try {
+        const result = await searchDeletedCharacters.execute(filter ?? {});
 
-      return {
-        results: results.map(mapCharacter),
-      };
+        return {
+          results: result.results.map(mapCharacter),
+          warnings: result.warnings,
+        };
+      } catch (error) {
+        throwGraphqlError(error);
+      }
     },
     character: async ({ id }: { id: string }) => {
-      const result = await getCharacterById.execute(id);
-      return result ? mapCharacter(result) : null;
+      try {
+        const result = await getCharacterById.execute(id);
+        return result ? mapCharacter(result) : null;
+      } catch (error) {
+        throwGraphqlError(error);
+      }
     },
     favoriteCharacterIds: async () => {
-      return getFavoriteCharacterIds.execute();
+      try {
+        return await getFavoriteCharacterIds.execute();
+      } catch (error) {
+        throwGraphqlError(error);
+      }
     },
     comments: async ({ characterId }: { characterId: string }) => {
-      const results = await getCharacterComments.execute(characterId);
-      return results.map(mapComment);
+      try {
+        const results = await getCharacterComments.execute(characterId);
+        return results.map(mapComment);
+      } catch (error) {
+        throwGraphqlError(error);
+      }
     },
     softDeleteCharacter: async ({ id }: { id: string }) => {
-      return softDeleteCharacter.execute(id);
+      try {
+        return await softDeleteCharacter.execute(id);
+      } catch (error) {
+        throwGraphqlError(error);
+      }
     },
     restoreCharacter: async ({ id }: { id: string }) => {
-      return restoreCharacter.execute(id);
+      try {
+        return await restoreCharacter.execute(id);
+      } catch (error) {
+        throwGraphqlError(error);
+      }
     },
     toggleFavorite: async ({ characterId }: { characterId: string }) => {
-      return toggleFavorite.execute(characterId);
+      try {
+        return await toggleFavorite.execute(characterId);
+      } catch (error) {
+        throwGraphqlError(error);
+      }
     },
     addComment: async ({ characterId, content }: { characterId: string; content: string }) => {
-      const result = await addComment.execute(characterId, content);
-      return result ? mapComment(result) : null;
+      try {
+        const result = await addComment.execute(characterId, content);
+        return result ? mapComment(result) : null;
+      } catch (error) {
+        throwGraphqlError(error);
+      }
     },
     softDeleteComment: async ({ id }: { id: string }) => {
-      return softDeleteComment.execute(id);
+      try {
+        return await softDeleteComment.execute(id);
+      } catch (error) {
+        throwGraphqlError(error);
+      }
     },
   };
 }

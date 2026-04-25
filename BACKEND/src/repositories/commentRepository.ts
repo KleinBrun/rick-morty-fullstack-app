@@ -1,3 +1,4 @@
+import { toDatabaseError } from '../application/errors.js';
 import type { CommentRepositoryPort } from '../application/ports/commentRepository.js';
 import { Character } from '../db/models/character.js';
 import { Comment } from '../db/models/comment.js';
@@ -20,57 +21,69 @@ export class CommentRepository implements CommentRepositoryPort {
   ) {}
 
   async listByCharacterApiId(apiId: string | number): Promise<CharacterCommentRecord[]> {
-    const character = await this.characterModel.findOne({
-      where: {
-        apiId: Number(apiId),
-      },
-    });
+    try {
+      const character = await this.characterModel.findOne({
+        where: {
+          apiId: Number(apiId),
+        },
+      });
 
-    if (!character) {
-      return [];
+      if (!character) {
+        return [];
+      }
+
+      const comments = await this.commentModel.findAll({
+        where: {
+          characterId: character.id,
+          deletedAt: null,
+        },
+        order: [['createdAt', 'DESC']],
+      });
+
+      return comments.map(mapComment);
+    } catch (error) {
+      throw toDatabaseError('comments.listByCharacterApiId', error);
     }
-
-    const comments = await this.commentModel.findAll({
-      where: {
-        characterId: character.id,
-        deletedAt: null,
-      },
-      order: [['createdAt', 'DESC']],
-    });
-
-    return comments.map(mapComment);
   }
 
   async addForCharacterApiId(apiId: string | number, content: string): Promise<CharacterCommentRecord | null> {
-    const character = await this.characterModel.findOne({
-      where: {
-        apiId: Number(apiId),
-      },
-    });
+    try {
+      const character = await this.characterModel.findOne({
+        where: {
+          apiId: Number(apiId),
+        },
+      });
 
-    if (!character || !content.trim()) {
-      return null;
+      if (!character || !content.trim()) {
+        return null;
+      }
+
+      const comment = await this.commentModel.create({
+        characterId: character.id,
+        content: content.trim(),
+      });
+
+      return mapComment(comment);
+    } catch (error) {
+      throw toDatabaseError('comments.addForCharacterApiId', error);
     }
-
-    const comment = await this.commentModel.create({
-      characterId: character.id,
-      content: content.trim(),
-    });
-
-    return mapComment(comment);
   }
 
   async softDeleteById(commentId: string | number): Promise<boolean> {
-    const [affectedRows] = await this.commentModel.update(
-      { deletedAt: new Date() },
-      {
-        where: {
-          id: Number(commentId),
-          deletedAt: null,
+    try {
+      const [affectedRows] = await this.commentModel.update(
+        { deletedAt: new Date() },
+        {
+          where: {
+            id: Number(commentId),
+            deletedAt: null,
+          },
         },
-      },
-    );
+      );
 
-    return affectedRows > 0;
+      return affectedRows > 0;
+    } catch (error) {
+      throw toDatabaseError('comments.softDeleteById', error);
+    }
   }
 }

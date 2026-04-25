@@ -24,8 +24,15 @@ export type Character = {
   };
 };
 
+export type ServiceWarning = {
+  code: string;
+  message: string;
+  source: string;
+};
+
 export type CharactersPayload = {
   results: Character[];
+  warnings: ServiceWarning[];
 } | null;
 
 export type CharactersQueryResponse = {

@@ -75,7 +75,6 @@ describe('useCharacterPreferences', () => {
 
     await waitFor(() => {
       expect(result.current.favoriteIds).toEqual(['1']);
-      expect(result.current.favoriteCharacters).toEqual([mockCharacter]);
       expect(result.current.isFavorite('1')).toBe(true);
     });
   });

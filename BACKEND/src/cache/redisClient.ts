@@ -1,4 +1,5 @@
 import { createClient, type RedisClientType } from 'redis';
+import { toErrorMessage } from '../application/errors.js';
 import type { CacheStorePort } from '../application/ports/cacheStore.js';
 import { env } from '../config/env.js';
 
@@ -19,14 +20,15 @@ export class RedisCacheAdapter implements CacheStorePort {
             });
             this.client.on('error', (error) => {
                 console.warn('[redis] client error:', error.message);
+                this.isEnabled = false;
             });
             await this.client.connect();
             this.isEnabled = true;
             console.log('[redis] connected');
-        } catch {
+        } catch (error) {
             this.isEnabled = false;
             this.client = null;
-            console.warn('[redis] unavailable, cache disabled');
+            console.warn(`[redis] unavailable, cache disabled code=CACHE_UNAVAILABLE message=${toErrorMessage(error)}`);
         }
     }
 
@@ -35,7 +37,12 @@ export class RedisCacheAdapter implements CacheStorePort {
             return null;
         }
 
-        return this.client.get(key);
+        try {
+            return await this.client.get(key);
+        } catch (error) {
+            this.disableAfterRuntimeError('get', error);
+            return null;
+        }
     }
 
     async set(key: string, value: string, ttlSeconds = 300) {
@@ -43,7 +50,11 @@ export class RedisCacheAdapter implements CacheStorePort {
             return;
         }
 
-        await this.client.set(key, value, { EX: ttlSeconds });
+        try {
+            await this.client.set(key, value, { EX: ttlSeconds });
+        } catch (error) {
+            this.disableAfterRuntimeError('set', error);
+        }
     }
 
     async delete(key: string) {
@@ -51,7 +62,11 @@ export class RedisCacheAdapter implements CacheStorePort {
             return;
         }
 
-        await this.client.del(key);
+        try {
+            await this.client.del(key);
+        } catch (error) {
+            this.disableAfterRuntimeError('delete', error);
+        }
     }
 
     async deleteByPrefix(prefix: string) {
@@ -59,10 +74,14 @@ export class RedisCacheAdapter implements CacheStorePort {
             return;
         }
 
-        const keys = await this.client.keys(`${prefix}*`);
+        try {
+            const keys = await this.client.keys(`${prefix}*`);
 
-        if (keys.length) {
-            await this.client.del(keys);
+            if (keys.length) {
+                await this.client.del(keys);
+            }
+        } catch (error) {
+            this.disableAfterRuntimeError('deleteByPrefix', error);
         }
     }
 
@@ -70,6 +89,11 @@ export class RedisCacheAdapter implements CacheStorePort {
         if (this.client?.isOpen) {
             await this.client.quit();
         }
+    }
+
+    private disableAfterRuntimeError(operation: string, error: unknown) {
+        this.isEnabled = false;
+        console.warn(`[redis] runtime cache disabled code=CACHE_UNAVAILABLE operation=${operation} message=${toErrorMessage(error)}`);
     }
 }
 

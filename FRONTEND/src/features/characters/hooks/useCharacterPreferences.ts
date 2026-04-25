@@ -30,14 +30,16 @@ function clearLegacyPreferenceStorage() {
 }
 
 export function useCharacterPreferences(selectedCharacterId?: string) {
-  const [favoriteIdsState, setFavoriteIdsState] = useState<string[]>([]);
-  const [hiddenCharacterIds, setHiddenCharacterIds] = useState<string[]>([]);
   const [hiddenCharactersById, setHiddenCharactersById] = useState<Record<string, Character>>({});
   const [favoriteCharactersById, setFavoriteCharactersById] = useState<Record<string, Character>>({});
 
-  const { data: favoritesData, client } = useQuery<FavoriteCharacterIdsQueryResponse>(GET_FAVORITE_CHARACTER_IDS);
+  const { data: favoritesData } = useQuery<FavoriteCharacterIdsQueryResponse>(GET_FAVORITE_CHARACTER_IDS);
 
-  const { data: commentsData, refetch: refetchCharacterPanel } = useQuery<CharacterPanelQueryResponse>(GET_CHARACTER_PANEL_DATA, {
+  const {
+    data: panelData,
+    error: panelError,
+    refetch: refetchCharacterPanel,
+  } = useQuery<CharacterPanelQueryResponse>(GET_CHARACTER_PANEL_DATA, {
     variables: { id: selectedCharacterId },
     skip: !selectedCharacterId,
   });
@@ -50,12 +52,9 @@ export function useCharacterPreferences(selectedCharacterId?: string) {
     clearLegacyPreferenceStorage();
   }, []);
 
-  useEffect(() => {
-    setFavoriteIdsState(favoritesData?.favoriteCharacterIds ?? []);
-  }, [favoritesData?.favoriteCharacterIds]);
-
-  const favoriteIds = favoriteIdsState;
+  const favoriteIds = favoritesData?.favoriteCharacterIds ?? [];
   const favoriteLookup = useMemo(() => new Set(favoriteIds), [favoriteIds]);
+  const hiddenCharacterIds = useMemo(() => Object.keys(hiddenCharactersById), [hiddenCharactersById]);
   const hiddenLookup = useMemo(() => new Set(hiddenCharacterIds), [hiddenCharacterIds]);
   const hiddenCharacters = useMemo(() => Object.values(hiddenCharactersById), [hiddenCharactersById]);
   const favoriteCharacters = useMemo(() => Object.values(favoriteCharactersById), [favoriteCharactersById]);
@@ -66,52 +65,56 @@ export function useCharacterPreferences(selectedCharacterId?: string) {
     }
 
     return {
-      [selectedCharacterId]: commentsData?.comments ?? [],
+      [selectedCharacterId]: panelData?.comments ?? [],
     };
-  }, [commentsData?.comments, selectedCharacterId]);
+  }, [panelData?.comments, selectedCharacterId]);
 
-  const toggleFavorite = useCallback(async (characterId: string, character?: Character) => {
-    const { data } = await toggleFavoriteMutation({ variables: { characterId } });
-    const isNowFavorite = data?.toggleFavorite;
+  const toggleFavorite = useCallback(async (characterId: string, _character?: Character) => {
+    await toggleFavoriteMutation({
+      variables: { characterId },
+      update: (cache, { data }) => {
+        const isNowFavorite = data?.toggleFavorite;
 
-    if (typeof isNowFavorite !== 'boolean') {
-      return;
-    }
+        if (typeof isNowFavorite !== 'boolean') {
+          return;
+        }
 
-    const currentFavorites = client.readQuery<FavoriteCharacterIdsQueryResponse>({
-      query: GET_FAVORITE_CHARACTER_IDS,
-    });
+        const currentFavorites = cache.readQuery<FavoriteCharacterIdsQueryResponse>({
+          query: GET_FAVORITE_CHARACTER_IDS,
+        });
 
-    const currentIds = currentFavorites?.favoriteCharacterIds ?? [];
-    const nextIds = isNowFavorite
-      ? [...new Set([...currentIds, characterId])]
-      : currentIds.filter((id) => id !== characterId);
+        const currentIds = currentFavorites?.favoriteCharacterIds ?? [];
+        const nextIds = isNowFavorite
+          ? [...new Set([...currentIds, characterId])]
+          : currentIds.filter((id) => id !== characterId);
 
-    setFavoriteIdsState(nextIds);
-
-    client.writeQuery<FavoriteCharacterIdsQueryResponse>({
-      query: GET_FAVORITE_CHARACTER_IDS,
-      data: {
-        favoriteCharacterIds: nextIds,
+        cache.writeQuery<FavoriteCharacterIdsQueryResponse>({
+          query: GET_FAVORITE_CHARACTER_IDS,
+          data: {
+            favoriteCharacterIds: nextIds,
+          },
+        });
       },
     });
 
     setFavoriteCharactersById((currentCharacters) => {
-      if (!isNowFavorite) {
+      const isCurrentlyFavorite = favoriteLookup.has(characterId);
+
+      if (isCurrentlyFavorite) {
         const { [characterId]: _removed, ...remainingCharacters } = currentCharacters;
         return remainingCharacters;
       }
 
-      if (!character) {
+      if (!_character) {
         return currentCharacters;
       }
 
       return {
         ...currentCharacters,
-        [characterId]: character,
+        [characterId]: _character,
       };
     });
-  }, [client, toggleFavoriteMutation]);
+  }, [favoriteLookup, toggleFavoriteMutation]);
 
   const addComment = useCallback(async (characterId: string, comment: string) => {
     const trimmedComment = comment.trim();
@@ -141,14 +144,8 @@ export function useCharacterPreferences(selectedCharacterId?: string) {
   }, [refetchCharacterPanel, selectedCharacterId, softDeleteCommentMutation]);
 
   const toggleHiddenCharacter = useCallback((characterId: string, character?: Character) => {
-    const isCurrentlyHidden = hiddenLookup.has(characterId);
-
-    setHiddenCharacterIds((currentIds) =>
-      isCurrentlyHidden ? currentIds.filter((id) => id !== characterId) : [...currentIds, characterId],
-    );
-
     setHiddenCharactersById((currentCharacters) => {
-      if (isCurrentlyHidden) {
+      if (currentCharacters[characterId]) {
         const { [characterId]: _removed, ...remainingCharacters } = currentCharacters;
         return remainingCharacters;
       }
@@ -162,10 +159,9 @@ export function useCharacterPreferences(selectedCharacterId?: string) {
         [characterId]: character,
       };
     });
-  }, [hiddenLookup]);
+  }, []);
 
   const restoreHiddenCharacters = useCallback(() => {
-    setHiddenCharacterIds([]);
     setHiddenCharactersById({});
   }, []);
 
@@ -178,6 +174,8 @@ export function useCharacterPreferences(selectedCharacterId?: string) {
     hiddenCharacters,
     isFavorite: useCallback((characterId: string) => favoriteLookup.has(characterId), [favoriteLookup]),
     isHidden: useCallback((characterId: string) => hiddenLookup.has(characterId), [hiddenLookup]),
+    panelCharacter: (panelData?.character as Character | null | undefined) ?? null,
+    panelError,
     restoreHiddenCharacters,
     softDeleteComment,
     toggleFavorite,

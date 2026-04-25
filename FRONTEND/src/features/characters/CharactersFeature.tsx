@@ -6,7 +6,6 @@ import { CharacterList } from './components/CharacterList';
 import { CharacterListSkeleton } from './components/CharacterListSkeleton';
 import { CharactersFeatureErrorState } from './components/CharactersFeatureErrorState';
 import { RESTORE_CHARACTER, SOFT_DELETE_CHARACTER } from './graphql/queries';
-import { useCharacterDetail } from './hooks/useCharacterDetail';
 import { useCharacters } from './hooks/useCharacters';
 import { useCharacterPreferences } from './hooks/useCharacterPreferences';
 import type { CharactersFeatureProps } from './types/ui.types';
@@ -32,12 +31,14 @@ export function CharactersFeature({ onBackToList, onSelectCharacter, selectedCha
 
   const {
     addComment,
-    favoriteCharacters,
     commentsByCharacter,
+    favoriteCharacters,
     favoriteIds,
     hiddenCharacterIds,
     hiddenCharacters,
     isFavorite,
+    panelCharacter,
+    panelError,
     softDeleteComment,
     toggleFavorite,
     toggleHiddenCharacter,
@@ -60,10 +61,11 @@ export function CharactersFeature({ onBackToList, onSelectCharacter, selectedCha
         deletedCharacters,
         favoriteCharacters,
         favoriteIds,
+        filters,
         hiddenCharacterIds,
         listMode,
       }),
-    [characters, deletedCharacters, favoriteCharacters, favoriteIds, hiddenCharacterIds, listMode],
+    [characters, deletedCharacters, favoriteCharacters, favoriteIds, filters, hiddenCharacterIds, listMode],
   );
 
   const activeFilterCount = useMemo(
@@ -79,11 +81,9 @@ export function CharactersFeature({ onBackToList, onSelectCharacter, selectedCha
     return visibleCharacters[0] ?? null;
   }, [selectedCharacterId, selectionClearedAfterDelete, visibleCharacters]);
 
-  const { character: detailedCharacter, error: detailError } = useCharacterDetail(selectedCharacterSummary?.id);
-
   const selectedCharacter = useMemo(
-    () => detailedCharacter?.id === selectedCharacterSummary?.id ? detailedCharacter : selectedCharacterSummary,
-    [detailedCharacter, selectedCharacterSummary],
+    () => panelCharacter?.id === selectedCharacterSummary?.id ? panelCharacter : selectedCharacterSummary,
+    [panelCharacter, selectedCharacterSummary],
   );
 
   const isSelectedCharacterDeleted = selectedCharacter ? listMode === 'deleted' || hiddenLookup.has(selectedCharacter.id) : false;
@@ -178,7 +178,7 @@ export function CharactersFeature({ onBackToList, onSelectCharacter, selectedCha
     'min-h-[100dvh] overflow-y-auto bg-white px-4 pb-28 pt-10 scroll-pb-40 sm:min-h-[844px] sm:p-5 sm:pb-28 md:block md:h-screen md:min-h-0 md:overflow-y-auto md:bg-white md:p-6 md:pb-6 lg:p-7 xl:p-8 2xl:p-10',
   ].join(' ');
 
-  if (error ?? detailError) {
+  if (error ?? panelError) {
     return <CharactersFeatureErrorState onReload={handleReload} />;
   }
 

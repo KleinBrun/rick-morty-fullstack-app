@@ -1,4 +1,5 @@
 import type { CharacterRecord } from '../../domain/character.js';
+import { isAppError, toErrorMessage } from '../errors.js';
 import type { CacheStorePort } from '../ports/cacheStore.js';
 import type { CharacterRepositoryPort } from '../ports/characterRepository.js';
 import type { ExternalCharacterSourcePort } from '../ports/externalCharacterSource.js';
@@ -19,11 +20,16 @@ export class GetCharacterByIdUseCase {
     let result = await this.repository.findByApiId(id, true);
 
     if (!result && this.externalSource) {
-      const importedCharacter = await this.externalSource.getById(id);
+      try {
+        const importedCharacter = await this.externalSource.getById(id);
 
-      if (importedCharacter) {
-        await this.repository.upsertMany([importedCharacter]);
-        result = await this.repository.findByApiId(id, true);
+        if (importedCharacter) {
+          await this.repository.upsertMany([importedCharacter]);
+          result = await this.repository.findByApiId(id, true);
+        }
+      } catch (error) {
+        const code = isAppError(error) ? error.code : 'EXTERNAL_API_UNAVAILABLE';
+        console.warn(`[characters.getById] external source skipped code=${code} id=${id} message=${toErrorMessage(error)}`);
       }
     }
 

@@ -1,4 +1,5 @@
 import { Op, col, fn, where, type WhereOptions } from 'sequelize';
+import { toDatabaseError } from '../application/errors.js';
 import type { CharacterRepositoryPort } from '../application/ports/characterRepository.js';
 import { Character } from '../db/models/character.js';
 import {
@@ -44,81 +45,109 @@ export class CharacterRepository implements CharacterRepositoryPort {
   constructor(private readonly model: typeof Character) {}
 
   async search(filters: CharacterSearchFilters = {}): Promise<CharacterRecord[]> {
-    const conditions = buildSearchConditions(filters);
-    const records = await this.model.findAll({
-      where: {
-        deletedAt: null,
-        ...(conditions.length ? { [Op.and]: conditions } : {}),
-      },
-      order: [['name', 'ASC']],
-    });
+    try {
+      const conditions = buildSearchConditions(filters);
+      const records = await this.model.findAll({
+        where: {
+          deletedAt: null,
+          ...(conditions.length ? { [Op.and]: conditions } : {}),
+        },
+        order: [['name', 'ASC']],
+      });
 
-    return records.map((record) => normalizeCharacter(record.get({ plain: true }) as CharacterRecord & Record<string, unknown>));
+      return records.map((record) => normalizeCharacter(record.get({ plain: true }) as CharacterRecord & Record<string, unknown>));
+    } catch (error) {
+      throw toDatabaseError('characters.search', error);
+    }
   }
 
   async searchDeleted(filters: CharacterSearchFilters = {}): Promise<CharacterRecord[]> {
-    const conditions = buildSearchConditions(filters);
-    const records = await this.model.findAll({
-      where: {
-        [Op.and]: [
-          { deletedAt: { [Op.not]: null } },
-          ...(conditions.length ? conditions : []),
-        ],
-      },
-      order: [['name', 'ASC']],
-    });
+    try {
+      const conditions = buildSearchConditions(filters);
+      const records = await this.model.findAll({
+        where: {
+          [Op.and]: [
+            { deletedAt: { [Op.not]: null } },
+            ...(conditions.length ? conditions : []),
+          ],
+        },
+        order: [['name', 'ASC']],
+      });
 
-    return records.map((record) => normalizeCharacter(record.get({ plain: true }) as CharacterRecord & Record<string, unknown>));
+      return records.map((record) => normalizeCharacter(record.get({ plain: true }) as CharacterRecord & Record<string, unknown>));
+    } catch (error) {
+      throw toDatabaseError('characters.searchDeleted', error);
+    }
   }
 
   async findByApiId(apiId: string | number, includeDeleted = false): Promise<CharacterRecord | null> {
-    const record = await this.model.findOne({
-      where: includeDeleted
-        ? { apiId: Number(apiId) }
-        : { apiId: Number(apiId), deletedAt: null },
-    });
+    try {
+      const record = await this.model.findOne({
+        where: includeDeleted
+          ? { apiId: Number(apiId) }
+          : { apiId: Number(apiId), deletedAt: null },
+      });
 
-    if (!record) {
-      return null;
+      if (!record) {
+        return null;
+      }
+
+      return normalizeCharacter(record.get({ plain: true }) as CharacterRecord & Record<string, unknown>);
+    } catch (error) {
+      throw toDatabaseError('characters.findByApiId', error);
     }
-
-    return normalizeCharacter(record.get({ plain: true }) as CharacterRecord & Record<string, unknown>);
   }
 
   async count() {
-    return this.model.count();
+    try {
+      return await this.model.count();
+    } catch (error) {
+      throw toDatabaseError('characters.count', error);
+    }
   }
 
   async upsertMany(characters: CharacterSeed[]) {
-    for (const character of characters) {
-      await this.model.upsert(character);
+    try {
+      for (const character of characters) {
+        await this.model.upsert(character);
+      }
+    } catch (error) {
+      throw toDatabaseError('characters.upsertMany', error);
     }
   }
 
   async softDeleteByApiId(apiId: string | number) {
-    const [affectedRows] = await this.model.update(
-      { deletedAt: new Date() },
-      {
-        where: {
-          apiId: Number(apiId),
-          deletedAt: null,
+    try {
+      const [affectedRows] = await this.model.update(
+        { deletedAt: new Date() },
+        {
+          where: {
+            apiId: Number(apiId),
+            deletedAt: null,
+          },
         },
-      },
-    );
+      );
 
-    return affectedRows > 0;
+      return affectedRows > 0;
+    } catch (error) {
+      throw toDatabaseError('characters.softDeleteByApiId', error);
+    }
   }
 
   async restoreByApiId(apiId: string | number) {
-    const [affectedRows] = await this.model.update(
-      { deletedAt: null },
-      {
-        where: {
-          apiId: Number(apiId),
+    try {
+      const [affectedRows] = await this.model.update(
+        { deletedAt: null },
+        {
+          where: {
+            apiId: Number(apiId),
+          },
         },
-      },
-    );
+      );
 
-    return affectedRows > 0;
+      return affectedRows > 0;
+    } catch (error) {
+      throw toDatabaseError('characters.restoreByApiId', error);
+    }
   }
 }
