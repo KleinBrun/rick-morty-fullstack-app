@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { AppError } from '../application/errors.js';
 import { SearchCharactersUseCase } from '../application/use-cases/searchCharacters.js';
 import type { CharacterRepositoryPort } from '../application/ports/characterRepository.js';
 import type { CharacterRecord, CharacterSearchFilters, CharacterSeed } from '../domain/character.js';
@@ -112,6 +113,12 @@ class InMemoryCharacterRepository implements CharacterRepositoryPort {
   }
 }
 
+class FailingSearchRepository extends InMemoryCharacterRepository {
+  override async search(): Promise<CharacterRecord[]> {
+    throw new AppError('DATABASE_UNAVAILABLE', 'Database operation failed: characters.search');
+  }
+}
+
 const repository = new InMemoryCharacterRepository();
 const cacheStore = new Map<string, string>();
 const cache = {
@@ -156,9 +163,10 @@ describe('SearchCharactersUseCase', () => {
 
     const results = await useCase.execute();
 
-    expect(results).toHaveLength(15);
-    expect(results[0]?.name).toBe('Character 01');
-    expect(results[14]?.name).toBe('Character 15');
+    expect(results.results).toHaveLength(15);
+    expect(results.results[0]?.name).toBe('Character 01');
+    expect(results.results[14]?.name).toBe('Character 15');
+    expect(results.warnings).toEqual([]);
   });
 
   it('filters characters by multiple criteria at the same time', async () => {
@@ -170,8 +178,9 @@ describe('SearchCharactersUseCase', () => {
       origin: 'earth',
     });
 
-    expect(results).toHaveLength(1);
-    expect(results[0]?.name).toBe('Rick Sanchez');
+    expect(results.results).toHaveLength(1);
+    expect(results.results[0]?.name).toBe('Rick Sanchez');
+    expect(results.warnings).toEqual([]);
   });
 
   it('merges public API matches when the local filter only returns a partial result set', async () => {
@@ -197,10 +206,44 @@ describe('SearchCharactersUseCase', () => {
     const useCaseWithFallback = new SearchCharactersUseCase(repository, cache, externalSource);
     const results = await useCaseWithFallback.execute({ name: 'z' });
 
-    expect(results.map((character) => character.name)).toEqual([
+    expect(results.results.map((character) => character.name)).toEqual([
       'Rick Sanchez',
       'Zeep Xanflorp',
     ]);
+    expect(results.warnings).toEqual([]);
     expect(await repository.findByApiId(30)).not.toBeNull();
+  });
+
+  it('keeps returning database results when the public API is unavailable', async () => {
+    const externalSource = {
+      async search() {
+        throw new AppError('EXTERNAL_API_UNAVAILABLE', 'Rick and Morty API is down');
+      },
+      async getById() {
+        return null;
+      },
+    };
+
+    const useCaseWithUnavailableApi = new SearchCharactersUseCase(repository, cache, externalSource);
+    const results = await useCaseWithUnavailableApi.execute({ name: 'rick' });
+
+    expect(results.results.map((character) => character.name)).toEqual(['Rick Sanchez']);
+    expect(results.warnings).toEqual([
+      {
+        code: 'EXTERNAL_API_UNAVAILABLE',
+        message: 'Rick and Morty API is down',
+        source: 'rick-and-morty-api',
+      },
+    ]);
+  });
+
+  it('surfaces database failures with a database-specific error code', async () => {
+    const failingRepository = new FailingSearchRepository();
+
+    const useCaseWithFailingDb = new SearchCharactersUseCase(failingRepository, cache);
+
+    await expect(useCaseWithFailingDb.execute({ name: 'rick' })).rejects.toMatchObject({
+      code: 'DATABASE_UNAVAILABLE',
+    });
   });
 });

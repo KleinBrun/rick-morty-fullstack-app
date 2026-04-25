@@ -64,6 +64,7 @@ export function getVisibleCharacters({
   deletedCharacters,
   favoriteCharacters,
   favoriteIds,
+  filters,
   hiddenCharacterIds,
   listMode,
 }: {
@@ -71,6 +72,7 @@ export function getVisibleCharacters({
   deletedCharacters: Character[];
   favoriteCharacters: Character[];
   favoriteIds: string[];
+  filters: CharacterFilters;
   hiddenCharacterIds: string[];
   listMode: CharacterViewMode;
 }) {
@@ -80,34 +82,31 @@ export function getVisibleCharacters({
 
   const hiddenLookup = new Set(hiddenCharacterIds);
   const favoriteLookup = new Set(favoriteIds);
-  const activeCharacters = characters.filter((character) => !hiddenLookup.has(character.id));
-  const visibleCharactersById = new Map<string, Character>();
+  const activeCharactersById = new Map<string, Character>();
 
-  for (const character of activeCharacters) {
-    visibleCharactersById.set(character.id, character);
+  for (const character of characters) {
+    if (!hiddenLookup.has(character.id)) {
+      activeCharactersById.set(character.id, character);
+    }
   }
 
-  if (listMode === 'starred') {
-    for (const character of favoriteCharacters) {
-      if (favoriteLookup.has(character.id) && !hiddenLookup.has(character.id)) {
-        visibleCharactersById.set(character.id, character);
-      }
+  for (const character of favoriteCharacters) {
+    if (favoriteLookup.has(character.id) && !hiddenLookup.has(character.id) && matchesCharacterFilters(character, filters)) {
+      activeCharactersById.set(character.id, character);
     }
+  }
 
-    return [...visibleCharactersById.values()].filter((character) => favoriteLookup.has(character.id));
+  const activeCharacters = [...activeCharactersById.values()];
+
+  if (listMode === 'starred') {
+    return activeCharacters.filter((character) => favoriteLookup.has(character.id));
   }
 
   if (listMode === 'others') {
     return activeCharacters.filter((character) => !favoriteLookup.has(character.id));
   }
 
-  for (const character of favoriteCharacters) {
-    if (favoriteLookup.has(character.id) && !hiddenLookup.has(character.id)) {
-      visibleCharactersById.set(character.id, character);
-    }
-  }
-
-  return [...visibleCharactersById.values()];
+  return activeCharacters;
 }
 
 export function getActiveFilterCount(

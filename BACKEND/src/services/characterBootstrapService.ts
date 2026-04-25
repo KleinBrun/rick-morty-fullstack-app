@@ -1,42 +1,9 @@
 import type { ExternalCharacterSourcePort } from '../application/ports/externalCharacterSource.js';
 import type { CharacterRepositoryPort } from '../application/ports/characterRepository.js';
+import { AppError, toExternalApiError } from '../application/errors.js';
 import type { CharacterSearchFilters, CharacterSeed } from '../domain/character.js';
 
-const API_URL = 'https://rickandmortyapi.com/graphql';
-
-const charactersQuery = `
-    query LoadCharacters($page: Int!, $filter: FilterCharacter) {
-        characters(page: $page, filter: $filter) {
-        results {
-            id
-            name
-            status
-            species
-            gender
-            image
-            origin {
-            name
-            }
-        }
-        }
-    }
-`;
-
-const characterDetailQuery = `
-    query LoadCharacterById($id: ID!) {
-        character(id: $id) {
-        id
-        name
-        status
-        species
-        gender
-        image
-        origin {
-            name
-        }
-        }
-    }
-`;
+const API_URL = 'https://rickandmortyapi.com/api/character';
 
 type RickAndMortyApiCharacter = {
     id: string;
@@ -48,13 +15,8 @@ type RickAndMortyApiCharacter = {
     origin: { name: string };
 };
 
-type RickAndMortyApiResponse = {
-    data?: {
-        characters?: {
-            results?: RickAndMortyApiCharacter[];
-        };
-        character?: RickAndMortyApiCharacter | null;
-    };
+type RickAndMortyApiSearchResponse = {
+    results?: RickAndMortyApiCharacter[];
 };
 
 function mapApiCharacter(character: RickAndMortyApiCharacter): CharacterSeed {
@@ -69,33 +31,47 @@ function mapApiCharacter(character: RickAndMortyApiCharacter): CharacterSeed {
     };
 }
 
-function buildApiFilter(filters: CharacterSearchFilters = {}) {
-    return {
-        name: filters.name?.trim() || undefined,
-        status: filters.status?.trim() || undefined,
-        species: filters.species?.trim() || undefined,
-        gender: filters.gender?.trim() || undefined,
+function buildApiUrl(filters: CharacterSearchFilters = {}) {
+    const url = new URL(API_URL);
+    url.searchParams.set('page', '1');
+
+    const supportedFilters = {
+        name: filters.name?.trim(),
+        status: filters.status?.trim(),
+        species: filters.species?.trim(),
+        gender: filters.gender?.trim(),
     };
+
+    Object.entries(supportedFilters).forEach(([key, value]) => {
+        if (value) {
+            url.searchParams.set(key, value);
+        }
+    });
+
+    return url;
 }
 
 export async function fetchCharactersFromApi(filters: CharacterSearchFilters = {}, limit = 15): Promise<CharacterSeed[]> {
-    const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            query: charactersQuery,
-            variables: { page: 1, filter: buildApiFilter(filters) },
-        }),
-    });
+    let response: Response;
 
-    if (!response.ok) {
-        throw new Error(`Unable to fetch characters: ${response.status} ${response.statusText}`);
+    try {
+        response = await fetch(buildApiUrl(filters));
+    } catch (error) {
+        throw toExternalApiError('characters.search', error);
     }
 
-    const payload = (await response.json()) as RickAndMortyApiResponse;
-    const results = payload.data?.characters?.results ?? [];
+    if (response.status === 404) {
+        return [];
+    }
+
+    if (!response.ok) {
+        throw new AppError('EXTERNAL_API_UNAVAILABLE', `Rick and Morty API returned ${response.status} ${response.statusText}`, {
+            details: { status: response.status, statusText: response.statusText },
+        });
+    }
+
+    const payload = (await response.json()) as RickAndMortyApiSearchResponse;
+    const results = payload.results ?? [];
 
     return results
         .slice(0, limit)
@@ -107,25 +83,26 @@ export async function fetchCharactersFromApi(filters: CharacterSearchFilters = {
 }
 
 export async function fetchCharacterByIdFromApi(id: string): Promise<CharacterSeed | null> {
-    const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            query: characterDetailQuery,
-            variables: { id },
-        }),
-    });
+    let response: Response;
 
-    if (!response.ok) {
-        throw new Error(`Unable to fetch character detail: ${response.status} ${response.statusText}`);
+    try {
+        response = await fetch(`${API_URL}/${id}`);
+    } catch (error) {
+        throw toExternalApiError('characters.getById', error);
     }
 
-    const payload = (await response.json()) as RickAndMortyApiResponse;
-    const character = payload.data?.character;
+    if (response.status === 404) {
+        return null;
+    }
 
-    return character ? mapApiCharacter(character) : null;
+    if (!response.ok) {
+        throw new AppError('EXTERNAL_API_UNAVAILABLE', `Rick and Morty API returned ${response.status} ${response.statusText}`, {
+            details: { id, status: response.status, statusText: response.statusText },
+        });
+    }
+
+    const character = (await response.json()) as RickAndMortyApiCharacter;
+    return mapApiCharacter(character);
 }
 
 export const publicCharacterSource: ExternalCharacterSourcePort = {

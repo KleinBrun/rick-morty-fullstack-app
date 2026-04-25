@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { AppError } from '../application/errors.js';
 import { GetCharacterByIdUseCase } from '../application/use-cases/getCharacterById.js';
 import type { CharacterRepositoryPort } from '../application/ports/characterRepository.js';
 import type { CharacterRecord, CharacterSeed } from '../domain/character.js';
@@ -107,5 +108,21 @@ describe('GetCharacterByIdUseCase', () => {
 
     expect(result?.name).toBe('Abadango Cluster Princess');
     expect(await repository.findByApiId(6)).not.toBeNull();
+  });
+
+  it('returns not found when the character is not local and the public API is unavailable', async () => {
+    const externalSource = {
+      async search() {
+        return [];
+      },
+      async getById() {
+        throw new AppError('EXTERNAL_API_UNAVAILABLE', 'Rick and Morty API is down');
+      },
+    };
+
+    const useCase = new GetCharacterByIdUseCase(repository, cache, externalSource);
+    const result = await useCase.execute('6');
+
+    expect(result).toBeNull();
   });
 });

@@ -489,7 +489,7 @@ describe('CharactersFeature integrations', () => {
         });
     });
 
-    it('keeps favorited imported species visible in starred mode even when the default list stays limited', async () => {
+    it('keeps favorited imported species visible in starred mode when filters are cleared', async () => {
         const limitedDefaultListMocks: MockedResponse[] = [
             {
                 request: {
@@ -643,7 +643,7 @@ describe('CharactersFeature integrations', () => {
         });
     });
 
-    it('keeps favorited imported species visible in all mode even when the default list stays limited', async () => {
+    it('keeps favorited imported species visible in all mode when filters are cleared', async () => {
         const limitedDefaultListMocks: MockedResponse[] = [
             {
                 request: {
